@@ -14,6 +14,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic");
         config.setApplicationDestinationPrefixes("/app");
+        // allow sending to user destinations if needed by the Hero app
+        config.setUserDestinationPrefix("/user");
     }
 
     @Override

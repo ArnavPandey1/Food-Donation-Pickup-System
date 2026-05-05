@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReliefFeed - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f4f6f9;
+            --primary: #f8cb46;
+            --text: #1c1c1c;
+            --text-muted: #666666;
+            --border: #e8e8e8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+        .login-card { background: #fff; padding: 3rem 2rem; border-radius: 24px; border: 1px solid var(--border); width: 100%; max-width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .logo-box { background: var(--primary); padding: 10px 15px; border-radius: 12px; font-weight: 800; font-size: 2rem; display: inline-block; margin-bottom: 1.5rem; }
+        h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
+        p { color: var(--text-muted); margin-bottom: 2rem; }
+        input { width: 100%; padding: 1rem; border-radius: 12px; border: 1px solid var(--border); font-size: 1rem; margin-bottom: 1.5rem; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(248, 203, 70, 0.2); }
+        .role-selector { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; margin-bottom: 2rem; }
+        .role-btn { padding: 1rem 0.5rem; border-radius: 12px; border: 1px solid var(--border); font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 0.85rem; }
+        .role-btn.active { background: var(--primary); border-color: var(--primary); }
+        .role-btn:hover:not(.active) { background: #f9fafb; }
+        .login-btn { width: 100%; padding: 1.2rem; border: none; border-radius: 12px; background: var(--text); color: #fff; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: 0.3s; }
+        .login-btn:hover { background: #000; transform: translateY(-2px); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-card { background: #fff; padding: 2.5rem; border-radius: 24px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--border); }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="logo-box">RF</div>
+        <h1>ReliefFeed</h1>
+        <p>Save Food. Save Lives. Faster.</p>
+        
+        <input type="text" id="username" placeholder="Enter your name / store name">
+        
+        <div style="text-align: left; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.8rem; color: #666;">SELECT YOUR ROLE</div>
+        <div class="role-selector">
+            <div class="role-btn active" id="btn-donor" onclick="selectRole('donor')">DONOR</div>
+            <div class="role-btn" id="btn-volunteer" onclick="selectRole('volunteer')">HERO</div>
+            <div class="role-btn" id="btn-admin" onclick="selectRole('admin')">ADMIN</div>
+        </div>
+        
+        <button class="login-btn" onclick="handleLogin()">Get Started →</button>
+    </div>
+    <div id="custom-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h2 id="modal-title">Alert</h2>
+            <p id="modal-message" style="margin-bottom: 1.5rem; color: var(--text-muted);"></p>
+            <button onclick="closeModal()" class="login-btn" style="padding: 0.8rem;">OK</button>
+        </div>
+    </div>
+    <script>
+        let selectedRole = 'donor';
+        function showPopup(title, msg) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = msg;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+        function selectRole(role) {
+            selectedRole = role;
+            document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-' + role).classList.add('active');
+        }
+        function handleLogin() {
+            const name = document.getElementById('username').value;
+            if (!name && selectedRole !== 'admin') {
+                showPopup('Missing Name', 'Please enter your name or store name to continue.');
+                return;
+            }
+            sessionStorage.setItem('rf_user', name);
+            window.location.href = selectedRole + '.html';
+        }
+    </script>
+</body>
+</html>

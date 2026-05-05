@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReliefFeed - Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f4f6f9;
+            --card: #ffffff;
+            --primary: #f8cb46;
+            --success: #0c831f;
+            --text: #1c1c1c;
+            --border: #e8e8e8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 2rem; }
+        header { background: #fff; padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+        .logo-box { background: var(--primary); padding: 5px 10px; border-radius: 8px; }
+        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
+        .card { background: var(--card); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--border); margin-bottom: 1.5rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { text-align: left; padding: 1rem; border-bottom: 1px solid var(--border); }
+        th { color: var(--success); font-weight: 800; text-transform: uppercase; font-size: 0.85rem; }
+        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="index.html" class="logo"><div class="logo-box">RF</div> ReliefFeed Admin</a>
+        <div id="admin-user-display" style="font-weight: 600;">NGO Control Center</div>
+    </header>
+    <div class="container">
+        <div id="api-status" style="padding: 0.5rem; background: #fee2e2; color: #b91c1c; border-radius: 8px; margin-bottom: 1rem; font-size: 0.8rem; display: none;">
+            ⚠️ API Error: Could not connect to backend.
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="card" style="background: var(--text); color: #fff; text-align: center;">
+                <h2 style="color: var(--primary); font-size: 2.5rem;" id="total-meals">0</h2>
+                <p>Total Meals Distributed</p>
+            </div>
+            <div class="card" style="background: var(--success); color: #fff; text-align: center;">
+                <h2 style="color: #fff; font-size: 2.5rem;" id="active-drops">0</h2>
+                <p>Active Drops in Progress</p>
+            </div>
+        </div>
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2>Live Logistics Tracker</h2>
+                <button onclick="loadAdminData()" style="width:auto; padding: 5px 15px; background:var(--bg); border:1px solid var(--border); border-radius:6px; font-size:0.8rem;">Refresh Now 🔄</button>
+            </div>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">Monitoring all Donor & Volunteer handovers in real-time.</p>
+            <table id="admin-table">
+                <thead>
+                    <tr>
+                        <th>Food Item</th>
+                        <th>Donor Name</th>
+                        <th>Volunteer Name</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <tr><td colspan="5" style="text-align:center; padding:2rem; color:gray;">Connecting to system...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        const adminName = sessionStorage.getItem('rf_user') || 'Admin';
+        document.getElementById('admin-user-display').innerText = `Admin: ${adminName}`;
+
+        async function loadAdminData() {
+            const statusDiv = document.getElementById('api-status');
+            try {
+                console.log("Admin: Fetching impact data...");
+                const impactRes = await fetch('http://localhost:8081/api/donations/impact');
+                if(!impactRes.ok) throw new Error("Impact API failed");
+                const impactData = await impactRes.json();
+                document.getElementById('total-meals').innerText = impactData.totalMealsSaved || 0;
+
+                console.log("Admin: Fetching all donations...");
+                const allRes = await fetch('http://localhost:8081/api/donations/all');
+                if(!allRes.ok) throw new Error("All Donations API failed");
+                const allData = await allRes.json();
+                console.log("Admin: Received donations:", allData);
+                
+                statusDiv.style.display = 'none';
+
+                const activeDrops = allData.filter(d => d.status === 'AVAILABLE' || d.status === 'CLAIMED' || d.status === 'PICKED_UP').length;
+                document.getElementById('active-drops').innerText = activeDrops;
+
+                let html = '';
+                if (allData.length === 0) {
+                    html = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:gray;">No donations recorded in the system yet.</td></tr>';
+                } else {
+                    allData.reverse().forEach(d => {
+                        let statusColor = d.status === 'DISTRIBUTED' ? 'rgba(12, 131, 31, 0.1)' : 'rgba(248, 203, 70, 0.2)';
+                        let textColor = d.status === 'DISTRIBUTED' ? '#0c831f' : '#b48505';
+                        
+                        html += `<tr>
+                            <td><strong>${d.foodType || 'Food'}</strong></td>
+                            <td>${d.donorName || 'Donor'}</td>
+                            <td>${d.volunteerName || '<span style="color:#aaa;">Searching...</span>'}</td>
+                            <td><small>${d.latitude || 0}, ${d.longitude || 0}</small></td>
+                            <td><span class="status-pill" style="background:${statusColor}; color:${textColor};">${d.status}</span></td>
+                        </tr>`;
+                    });
+                }
+                document.getElementById('table-body').innerHTML = html;
+            } catch(e) {
+                console.error("Admin Dashboard Error:", e);
+                statusDiv.innerText = "⚠️ API Error: " + e.message;
+                statusDiv.style.display = 'block';
+            }
+        }
+        loadAdminData();
+        setInterval(loadAdminData, 10000);
+    </script>
+</body>
+</html>

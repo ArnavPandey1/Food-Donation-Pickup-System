@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReliefFeed - Donor Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f4f6f9;
+            --card: #ffffff;
+            --primary: #f8cb46;
+            --primary-dark: #e5b833;
+            --success: #0c831f;
+            --success-dark: #0b731b;
+            --text: #1c1c1c;
+            --text-muted: #666666;
+            --border: #e8e8e8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 2rem; }
+        header { background: #fff; padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+        .logo-box { background: var(--primary); padding: 5px 10px; border-radius: 8px; }
+        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        .card { background: var(--card); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--border); margin-bottom: 1.5rem; }
+        h2 { font-size: 1.4rem; margin-bottom: 1rem; }
+        input { width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border); font-size: 1rem; margin-bottom: 1rem; outline: none; }
+        button { width: 100%; padding: 1rem; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-success { background: var(--success); color: #fff; }
+        .list-item { padding: 1rem; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; }
+        .badge-yellow { background: rgba(248, 203, 70, 0.2); color: #b48505; }
+        .badge-green { background: rgba(12, 131, 31, 0.1); color: var(--success); }
+        .hidden { display: none !important; }
+        .otp-box { background: #f8f9fa; border: 2px dashed var(--border); padding: 1rem; text-align: center; font-size: 2rem; font-weight: 800; letter-spacing: 5px; color: var(--success); border-radius: 12px; margin: 1rem 0; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-card { background: #fff; padding: 2.5rem; border-radius: 24px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="index.html" class="logo"><div class="logo-box">RF</div> ReliefFeed</a>
+        <div id="user-display" style="font-weight: 600;">Donor</div>
+    </header>
+    <div class="container">
+        <div id="donor-main">
+            <div class="card" style="background: var(--primary); display: flex; justify-content: space-between; align-items: center;">
+                <div><h2>Your Impact</h2><p id="impact-count" style="font-size: 2rem; font-weight: 800;">0 Meals</p></div>
+                <div style="font-size: 3rem;">🏅</div>
+            </div>
+            <button class="btn-success" onclick="toggleView('post')" style="margin-bottom: 2rem;">+ Post New Food Drop</button>
+            <h2>Your Donation History</h2>
+            <div id="history-list">Loading...</div>
+        </div>
+        <div id="donor-post" class="hidden">
+            <button onclick="toggleView('main')" style="background:none; color:var(--text-muted); width:auto; padding:0; margin-bottom:1rem;">← Back to Dashboard</button>
+            <div class="card">
+                <h2>Post Food Drop</h2>
+                <form id="post-form">
+                    <label>Food Items</label><input type="text" id="foodType" placeholder="e.g. 10 Burgers" required>
+                    <label style="display: block; font-weight: 700; margin-bottom: 0.5rem;">QUANTITY (KG / PLATES)</label>
+                    <input type="text" id="qty" placeholder="e.g. 5kg or 20 plates" required>
+
+                    <label style="display: block; font-weight: 700; margin-bottom: 0.5rem;">FOOD IMAGE 📸</label>
+                    <input type="file" id="foodImage" accept="image/*" style="padding: 0.8rem; background: #f8f9fa;">
+                    
+                    <label>Pickup Location</label><input type="text" id="loc" value="Auto-GPS: 40.7128, -74.0060" disabled>
+                    <button type="submit" class="btn-success" style="margin-top: 1rem;">Request Pickup 🚀</button>
+                </form>
+            </div>
+        </div>
+        <div id="donor-waiting" class="hidden">
+            <div class="card" style="text-align: center; padding: 3rem 1.5rem;">
+                <h2 id="wait-status">Searching for Volunteer...</h2>
+                <p style="color: var(--text-muted); margin-bottom: 2rem;">We are broadcasting your request to nearby heroes.</p>
+                <div id="otp-display" class="hidden">
+                    <p style="font-weight: 600; color: var(--success-dark);">Volunteer Found! Share this OTP for handover:</p>
+                    <div class="otp-box" id="otp-code">000000</div>
+                </div>
+                <button onclick="location.reload()" class="btn-success" style="background: var(--text);">Done / Reset</button>
+            </div>
+        </div>
+    </div>
+    <div id="custom-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h2 id="modal-title">Notification</h2>
+            <p id="modal-message" style="margin-bottom: 1.5rem; color: var(--text-muted);"></p>
+            <button onclick="closeModal()" class="btn-success">Understood</button>
+        </div>
+    </div>
+    <script>
+        const donorName = sessionStorage.getItem('rf_user') || 'Anonymous Donor';
+        document.getElementById('user-display').innerText = `Donor: ${donorName}`;
+
+        function showPopup(title, msg) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = msg;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        function toggleView(view) {
+            document.getElementById('donor-main').classList.add('hidden');
+            document.getElementById('donor-post').classList.add('hidden');
+            document.getElementById('donor-waiting').classList.add('hidden');
+            document.getElementById('donor-' + view).classList.remove('hidden');
+        }
+        async function loadHistory() {
+            try {
+                console.log("Fetching history for:", donorName);
+                const res = await fetch(`http://localhost:8081/api/donations/donor/${encodeURIComponent(donorName)}`);
+                if(res.ok) {
+                    const data = await res.json();
+                    console.log("History data:", data);
+                    let meals = 0;
+                    let html = '';
+                    data.forEach(d => {
+                        if(d.status === 'DISTRIBUTED') meals += (d.quantityKg * 4);
+                        html += `<div class="list-item">
+                            <div><h3>${d.foodType}</h3><p>${d.quantityKg}kg • ${d.status}</p></div>
+                            <span class="badge ${d.status === 'AVAILABLE' ? 'badge-yellow' : 'badge-green'}">${d.status}</span>
+                        </div>`;
+                    });
+                    document.getElementById('impact-count').innerText = `${Math.round(meals)} Meals`;
+                    document.getElementById('history-list').innerHTML = html || '<p>No history yet.</p>';
+                } else {
+                    console.error("History fetch failed with status:", res.status);
+                }
+            } catch(e) {
+                console.error("Failed to load history", e);
+            }
+        }
+        document.getElementById('post-form').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            let imageUrl = '';
+            const imageFile = document.getElementById('foodImage').files[0];
+            
+            if (imageFile) {
+                const formData = new FormData();
+                formData.append('file', imageFile);
+                try {
+                    const imgRes = await fetch('http://localhost:8081/api/donations/image', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    if (imgRes.ok) {
+                        const imgData = await imgRes.json();
+                        imageUrl = imgData.imageUrl;
+                    }
+                } catch(err) { console.error("Image upload failed", err); }
+            }
+
+            const payload = {
+                donorName,
+                foodType: document.getElementById('foodType').value,
+                quantityKg: parseFloat(document.getElementById('qty').value) || 0,
+                imageUrl: imageUrl,
+                latitude: 40.7128, longitude: -74.0060,
+                expiryTimestamp: new Date(Date.now() + 3600000).toISOString()
+            };
+            try {
+                console.log("Posting donation:", payload);
+                const res = await fetch('http://localhost:8081/api/donations', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    const d = await res.json();
+                    console.log("Donation created:", d);
+                    toggleView('waiting');
+                    document.getElementById('otp-code').innerText = d.otp;
+                    pollStatus(d.id);
+                } else {
+                    showPopup('Error', 'Failed to post donation. Check server console.');
+                }
+            } catch(err) {
+                showPopup('Connection Error', 'Could not reach the server.');
+            }
+        };
+        async function pollStatus(id) {
+            const interval = setInterval(async () => {
+                try {
+                    const res = await fetch(`http://localhost:8081/api/donations/donor/${encodeURIComponent(donorName)}`);
+                    const data = await res.json();
+                    const d = data.find(x => x.id === id);
+                    if (d && d.status !== 'AVAILABLE') {
+                        const vol = d.volunteerName || 'A Hero';
+                        document.getElementById('wait-status').innerText = `${vol} is on the way! ✅`;
+                        document.getElementById('otp-display').classList.remove('hidden');
+                        if (d.status === 'PICKED_UP' || d.status === 'DISTRIBUTED') {
+                            document.getElementById('wait-status').innerText = 'Food Handover Complete! 🏁';
+                            clearInterval(interval);
+                        }
+                    }
+                } catch(e) { console.error("Polling error:", e); }
+            }, 3000);
+        }
+        loadHistory();
+    </script>
+</body>
+</html>

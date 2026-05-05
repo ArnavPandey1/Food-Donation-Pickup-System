@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReliefFeed - Volunteer Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f4f6f9;
+            --card: #ffffff;
+            --primary: #f8cb46;
+            --success: #0c831f;
+            --text: #1c1c1c;
+            --text-muted: #666666;
+            --border: #e8e8e8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 2rem; }
+        header { background: #fff; padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+        .logo-box { background: var(--primary); padding: 5px 10px; border-radius: 8px; }
+        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        .card { background: var(--card); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--border); margin-bottom: 1.5rem; }
+        h2 { font-size: 1.4rem; margin-bottom: 1rem; }
+        button { width: 100%; padding: 1rem; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: #000; }
+        .btn-success { background: var(--success); color: #fff; }
+        .list-item { padding: 1.2rem; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; background: #fff; }
+        .hidden { display: none !important; }
+        #notification-toast { position: fixed; top: 20px; right: 20px; background: var(--text); color: #fff; padding: 1rem 2rem; border-radius: 8px; transform: translateX(200%); transition: 0.4s; z-index: 1000; }
+        #notification-toast.show { transform: translateX(0); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-card { background: #fff; padding: 2.5rem; border-radius: 24px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+    <div id="notification-toast">New Food Drop Nearby! 🔔</div>
+    <header>
+        <a href="index.html" class="logo"><div class="logo-box">RF</div> ReliefFeed</a>
+        <div id="user-display" style="font-weight: 600;">Volunteer</div>
+    </header>
+    <div class="container">
+        <div id="vol-feed-view">
+            <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+                <div><h2>Active Alerts</h2><p style="color: var(--success); font-weight: 800;">🟢 Online & Looking</p></div>
+                <div style="font-size: 2rem;">⚡</div>
+            </div>
+            <div id="active-list">Loading nearby drops...</div>
+            
+            <h2 style="margin-top: 2rem;">My Delivery History 📦</h2>
+            <div id="vol-history">Loading history...</div>
+        </div>
+        <div id="vol-job-view" class="hidden">
+            <div class="card">
+                <h2 style="color: var(--success);">Accepted: <span id="job-title">Food</span></h2>
+                <p style="margin-bottom: 0.5rem;">Pickup from: <strong id="job-donor">Store</strong></p>
+                <p style="margin-bottom: 1rem; color: var(--success); font-weight: 600;">📍 Location: <span id="job-location">40.7128, -74.0060</span></p>
+                <div style="background: #e2e8f0; height: 150px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-weight: 600; margin-bottom: 1.5rem;">🗺️ Navigation to Location</div>
+                <div id="step-pickup">
+                    <h3>Step 1: Verify Pickup</h3>
+                    <input type="text" id="otp-input" placeholder="Enter 6-digit OTP" style="width: 100%; padding: 1rem; margin: 1rem 0; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 1.5rem; letter-spacing: 4px;">
+                    <button class="btn-primary" onclick="verifyPickup()">Confirm Pickup</button>
+                </div>
+                <div id="step-distribute" class="hidden">
+                    <h3>Step 2: Proof of Distribution</h3>
+                    <p style="margin-bottom: 1rem; color: var(--text-muted);">Upload a photo of the distribution.</p>
+                    <button class="btn-success" onclick="completeJob()">Mark as Distributed 🎉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="custom-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h2 id="modal-title">Blinkit System</h2>
+            <p id="modal-message" style="margin-bottom: 1.5rem; color: var(--text-muted);"></p>
+            <button onclick="closeModal()" class="btn-primary">OK</button>
+        </div>
+    </div>
+    <script>
+        const volName = sessionStorage.getItem('rf_user') || 'Hero Volunteer';
+        document.getElementById('user-display').innerText = `Volunteer: ${volName}`;
+        let activeJobId = null;
+
+        function showPopup(title, msg) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = msg;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        async function loadFeed() {
+            try {
+                const res = await fetch('http://localhost:8081/api/donations/active');
+                const data = await res.json();
+                let html = '';
+                data.forEach(d => {
+                    html += `<div class="list-item">
+                        <div><h3>${d.foodType}</h3><p>${d.donorName} • ~2.1 km</p></div>
+                        <button class="btn-primary" style="width: auto; padding: 0.6rem 1.2rem;" onclick="claim(${d.id}, '${d.foodType}', '${d.donorName}', ${d.latitude}, ${d.longitude})">Accept 🚀</button>
+                    </div>`;
+                });
+                document.getElementById('active-list').innerHTML = html || '<p style="text-align: center; padding: 2rem;">No drops nearby yet. Keep an eye out!</p>';
+            } catch(e) {}
+        }
+
+        async function claim(id, title, donor, lat, lng) {
+            try {
+                console.log("Claiming donation:", id, "by volunteer:", volName);
+                const res = await fetch(`http://localhost:8081/api/donations/${id}/claim?volunteerName=${encodeURIComponent(volName)}`, {method: 'POST'});
+                if (res.ok) {
+                    activeJobId = id;
+                    document.getElementById('vol-feed-view').classList.add('hidden');
+                    document.getElementById('vol-job-view').classList.remove('hidden');
+                    document.getElementById('job-title').innerText = title;
+                    document.getElementById('job-donor').innerText = donor;
+                    document.getElementById('job-location').innerText = `${lat}, ${lng}`;
+                    showPopup('Success', 'Job Accepted! Start your journey.');
+                } else { 
+                    showPopup('Oops!', 'Someone else just grabbed this job!');
+                    loadFeed(); 
+                }
+            } catch(e) { console.error("Claim failed", e); }
+        }
+
+        async function verifyPickup() {
+            const otp = document.getElementById('otp-input').value;
+            console.log("Verifying OTP:", otp, "for donation:", activeJobId);
+            const res = await fetch(`http://localhost:8081/api/donations/${activeJobId}/pickup?otp=${encodeURIComponent(otp)}`, {method: 'POST'});
+            if (res.ok) {
+                document.getElementById('step-pickup').classList.add('hidden');
+                document.getElementById('step-distribute').classList.remove('hidden');
+                showPopup('Verified', 'OTP correct! Proceed to distribution point.');
+            } else { 
+                showPopup('Wrong OTP', 'Please double check the code with the donor.');
+            }
+        }
+
+        async function completeJob() {
+            console.log("Marking distributed for:", activeJobId);
+            await fetch(`http://localhost:8081/api/donations/${activeJobId}/distribute`, {method: 'POST'});
+            location.reload();
+        }
+
+        async function loadHistory() {
+            try {
+                console.log("Loading history for hero:", volName);
+                const res = await fetch(`http://localhost:8081/api/donations/volunteer/${encodeURIComponent(volName)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    console.log("Hero history data:", data);
+                    let html = '';
+                    data.forEach(d => {
+                        let badgeClass = d.status === 'DISTRIBUTED' ? 'badge-green' : 'badge-yellow';
+                        html += `<div class="list-item">
+                            <div><h3>${d.foodType}</h3><p>From: ${d.donorName} • ${d.status}</p></div>
+                            <span class="badge ${badgeClass}">${d.status}</span>
+                        </div>`;
+                    });
+                    document.getElementById('vol-history').innerHTML = html || '<p style="padding:1rem; color:gray;">No past deliveries yet.</p>';
+                } else {
+                    document.getElementById('vol-history').innerHTML = '<p style="padding:1rem; color:gray;">Could not load history.</p>';
+                }
+            } catch(e) { 
+                console.error("History fetch failed", e); 
+                document.getElementById('vol-history').innerHTML = '<p style="padding:1rem; color:gray;">History service unavailable.</p>';
+            }
+        }
+
+        function connect() {
+            const socket = new SockJS('/ws');
+            const stompClient = Stomp.over(socket);
+            stompClient.connect({}, () => {
+                stompClient.subscribe('/topic/nearby-donations', (msg) => {
+                    const toast = document.getElementById('notification-toast');
+                    toast.classList.add('show');
+                    setTimeout(() => toast.classList.remove('show'), 4000);
+                    loadFeed();
+                });
+            });
+        }
+
+        loadFeed();
+        loadHistory();
+        connect();
+    </script>
+</body>
+</html>

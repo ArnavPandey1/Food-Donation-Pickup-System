@@ -7,24 +7,107 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #f4f6f9;
+            --bg: #f5f1e8;
             --card: #ffffff;
-            --primary: #f8cb46;
+            --primary: #f6b93b;
             --success: #0c831f;
-            --text: #1c1c1c;
-            --border: #e8e8e8;
+            --info: #2057f5;
+            --ink: #151515;
+            --muted: #6c6c6c;
+            --border: #e7dfcf;
+            --shadow: 0 18px 50px rgba(21, 21, 21, 0.08);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
-        body { background: var(--bg); color: var(--text); padding-bottom: 2rem; }
-        header { background: #fff; padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(246, 185, 59, 0.18), transparent 26%),
+                radial-gradient(circle at top right, rgba(32, 87, 245, 0.12), transparent 22%),
+                linear-gradient(180deg, #faf6ee 0%, #f5f1e8 100%);
+            color: var(--ink);
+            padding-bottom: 2rem;
+        }
+        header {
+            background: rgba(255, 255, 255, 0.86);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
         .logo { font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
         .logo-box { background: var(--primary); padding: 5px 10px; border-radius: 8px; }
-        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
-        .card { background: var(--card); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--border); margin-bottom: 1.5rem; }
+        .container { max-width: 1250px; margin: 2rem auto; padding: 0 1rem; }
+        .hero {
+            background: linear-gradient(135deg, rgba(21, 21, 21, 0.96), rgba(37, 37, 37, 0.92));
+            color: #fff;
+            border-radius: 28px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 1.5rem;
+        }
+        .hero h1 { font-size: clamp(2rem, 4vw, 3.4rem); line-height: 1.05; margin-bottom: 0.75rem; }
+        .hero p { color: rgba(255, 255, 255, 0.78); max-width: 70ch; }
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(246, 185, 59, 0.14);
+            color: #ffd77a;
+            border: 1px solid rgba(246, 185, 59, 0.28);
+            padding: 0.45rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+        .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .metric-card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 1.35rem;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            min-height: 150px;
+        }
+        .metric-card .label { color: var(--muted); font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+        .metric-card .value { font-size: 2.3rem; font-weight: 800; margin-top: 0.75rem; line-height: 1; }
+        .metric-card .hint { color: var(--muted); font-size: 0.95rem; margin-top: 0.65rem; }
+        .metric-card.accent { background: linear-gradient(135deg, var(--success), #09611a); color: #fff; }
+        .metric-card.accent .label,
+        .metric-card.accent .hint { color: rgba(255, 255, 255, 0.78); }
+        .metric-card.gold { background: linear-gradient(135deg, #ffcf65, #f6b93b); color: #1d1d1d; }
+        .metric-card.gold .label,
+        .metric-card.gold .hint { color: rgba(29, 29, 29, 0.72); }
+        .dashboard-grid { display: grid; grid-template-columns: 1.65fr 1fr; gap: 1rem; align-items: start; }
+        .card { background: var(--card); border-radius: 20px; padding: 1.4rem; border: 1px solid var(--border); box-shadow: var(--shadow); }
+        .card h2 { font-size: 1.2rem; margin-bottom: 0.35rem; }
+        .card p.subtle { color: var(--muted); font-size: 0.92rem; margin-bottom: 1rem; }
+        .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { text-align: left; padding: 1rem; border-bottom: 1px solid var(--border); }
-        th { color: var(--success); font-weight: 800; text-transform: uppercase; font-size: 0.85rem; }
-        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; }
+        th, td { text-align: left; padding: 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+        th { color: var(--success); font-weight: 800; text-transform: uppercase; font-size: 0.78rem; letter-spacing: 0.08em; }
+        .status-pill { padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 800; display: inline-block; white-space: nowrap; }
+        .leaderboard-rank { display: inline-flex; align-items: center; justify-content: center; min-width: 2rem; height: 2rem; border-radius: 999px; background: rgba(246, 185, 59, 0.18); color: #8c5d00; font-weight: 800; }
+        .empty-state { text-align: center; padding: 2rem; color: var(--muted); }
+        .grid-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+        .refresh-btn {
+            width: auto;
+            padding: 0.55rem 1rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .refresh-btn:hover { filter: brightness(0.98); }
+        @media (max-width: 980px) {
+            .metric-grid, .dashboard-grid, .grid-two { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -36,36 +119,84 @@
         <div id="api-status" style="padding: 0.5rem; background: #fee2e2; color: #b91c1c; border-radius: 8px; margin-bottom: 1rem; font-size: 0.8rem; display: none;">
             ⚠️ API Error: Could not connect to backend.
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
-            <div class="card" style="background: var(--text); color: #fff; text-align: center;">
-                <h2 style="color: var(--primary); font-size: 2.5rem;" id="total-meals">0</h2>
-                <p>Total Meals Distributed</p>
+        <div class="hero">
+            <div class="eyebrow">NGO Oversight · Impact Data · System-Wide Visibility</div>
+            <h1>Control the food network from one logistics command post.</h1>
+            <p>The Master Logistics Log shows every donation in motion, while the leaderboard and counters highlight where the network is creating the most meals saved.</p>
+        </div>
+
+        <div class="metric-grid">
+            <div class="metric-card gold">
+                <div class="label">Total Meals Saved</div>
+                <div class="value" id="total-meals">0</div>
+                <div class="hint">Meals recovered through distributed donations.</div>
             </div>
-            <div class="card" style="background: var(--success); color: #fff; text-align: center;">
-                <h2 style="color: #fff; font-size: 2.5rem;" id="active-drops">0</h2>
-                <p>Active Drops in Progress</p>
+            <div class="metric-card accent">
+                <div class="label">Active Drops</div>
+                <div class="value" id="active-drops">0</div>
+                <div class="hint">Available, claimed, or picked up donations in flight.</div>
+            </div>
+            <div class="metric-card">
+                <div class="label">Distributed Donations</div>
+                <div class="value" id="distributed-drops">0</div>
+                <div class="hint">Completed handoffs already turned into impact.</div>
+            </div>
+            <div class="metric-card">
+                <div class="label">Top Donor</div>
+                <div class="value" id="top-donor-name">-</div>
+                <div class="hint" id="top-donor-meta">Waiting for leaderboard data.</div>
             </div>
         </div>
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2>Live Logistics Tracker</h2>
-                <button onclick="loadAdminData()" style="width:auto; padding: 5px 15px; background:var(--bg); border:1px solid var(--border); border-radius:6px; font-size:0.8rem;">Refresh Now 🔄</button>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap: 1rem;">
+                    <div>
+                        <h2>Master Logistics Log</h2>
+                        <p class="subtle">Monitoring donor to volunteer handovers in real time.</p>
+                    </div>
+                    <button onclick="loadAdminData()" class="refresh-btn">Refresh Now</button>
+                </div>
+                <div class="table-wrap">
+                    <table id="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Food Item</th>
+                                <th>Donor Name</th>
+                                <th>Volunteer Name</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <tr><td colspan="5" class="empty-state">Connecting to system...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">Monitoring all Donor & Volunteer handovers in real-time.</p>
-            <table id="admin-table">
-                <thead>
-                    <tr>
-                        <th>Food Item</th>
-                        <th>Donor Name</th>
-                        <th>Volunteer Name</th>
-                        <th>Location</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body">
-                    <tr><td colspan="5" style="text-align:center; padding:2rem; color:gray;">Connecting to system...</td></tr>
-                </tbody>
-            </table>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap: 1rem;">
+                    <div>
+                        <h2>Donor Leaderboard</h2>
+                        <p class="subtle">Ranked by meals saved from distributed donations.</p>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table id="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Donor</th>
+                                <th>Meals Saved</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body">
+                            <tr><td colspan="3" class="empty-state">Waiting for leaderboard data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
     <script>
@@ -75,30 +206,56 @@
         async function loadAdminData() {
             const statusDiv = document.getElementById('api-status');
             try {
-                console.log("Admin: Fetching impact data...");
-                const impactRes = await fetch('http://localhost:8081/api/donations/impact');
-                if(!impactRes.ok) throw new Error("Impact API failed");
-                const impactData = await impactRes.json();
-                document.getElementById('total-meals').innerText = impactData.totalMealsSaved || 0;
+                const [impactRes, allRes, topRes] = await Promise.all([
+                    fetch('http://localhost:8081/api/donations/impact'),
+                    fetch('http://localhost:8081/api/donations/all'),
+                    fetch('http://localhost:8081/api/donations/impact/top-donors')
+                ]);
 
-                console.log("Admin: Fetching all donations...");
-                const allRes = await fetch('http://localhost:8081/api/donations/all');
-                if(!allRes.ok) throw new Error("All Donations API failed");
+                if (!impactRes.ok) throw new Error('Impact API failed');
+                if (!allRes.ok) throw new Error('All Donations API failed');
+                if (!topRes.ok) throw new Error('Top donor API failed');
+
+                const impactData = await impactRes.json();
                 const allData = await allRes.json();
-                console.log("Admin: Received donations:", allData);
-                
+                const topDonors = await topRes.json();
+
                 statusDiv.style.display = 'none';
 
-                const activeDrops = allData.filter(d => d.status === 'AVAILABLE' || d.status === 'CLAIMED' || d.status === 'PICKED_UP').length;
+                const activeDrops = allData.filter(d => ['AVAILABLE', 'CLAIMED', 'PICKED_UP'].includes(d.status)).length;
+                const distributedDrops = allData.filter(d => d.status === 'DISTRIBUTED').length;
                 document.getElementById('active-drops').innerText = activeDrops;
+                document.getElementById('distributed-drops').innerText = distributedDrops;
+                document.getElementById('total-meals').innerText = impactData.totalMealsSaved || 0;
+
+                if (topDonors.length > 0) {
+                    const topDonor = topDonors[0];
+                    document.getElementById('top-donor-name').innerText = topDonor.donorName || '-';
+                    document.getElementById('top-donor-meta').innerText = `${topDonor.mealsSaved || 0} meals saved · ${topDonor.donationCount || 0} donations · ${(topDonor.totalKg || 0).toFixed(1)} kg`;
+                } else {
+                    document.getElementById('top-donor-name').innerText = '-';
+                    document.getElementById('top-donor-meta').innerText = 'No distributed donations yet.';
+                }
 
                 let html = '';
                 if (allData.length === 0) {
-                    html = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:gray;">No donations recorded in the system yet.</td></tr>';
+                    html = '<tr><td colspan="5" class="empty-state">No donations recorded in the system yet.</td></tr>';
                 } else {
                     allData.reverse().forEach(d => {
-                        let statusColor = d.status === 'DISTRIBUTED' ? 'rgba(12, 131, 31, 0.1)' : 'rgba(248, 203, 70, 0.2)';
-                        let textColor = d.status === 'DISTRIBUTED' ? '#0c831f' : '#b48505';
+                        const statusColorMap = {
+                            AVAILABLE: 'rgba(32, 87, 245, 0.12)',
+                            CLAIMED: 'rgba(246, 185, 59, 0.18)',
+                            PICKED_UP: 'rgba(108, 92, 231, 0.14)',
+                            DISTRIBUTED: 'rgba(12, 131, 31, 0.12)'
+                        };
+                        const statusTextMap = {
+                            AVAILABLE: '#2057f5',
+                            CLAIMED: '#8c5d00',
+                            PICKED_UP: '#6c5ce7',
+                            DISTRIBUTED: '#0c831f'
+                        };
+                        let statusColor = statusColorMap[d.status] || 'rgba(120, 120, 120, 0.12)';
+                        let textColor = statusTextMap[d.status] || '#555';
                         
                         html += `<tr>
                             <td><strong>${d.foodType || 'Food'}</strong></td>
@@ -110,6 +267,20 @@
                     });
                 }
                 document.getElementById('table-body').innerHTML = html;
+
+                let leaderboardHtml = '';
+                if (topDonors.length === 0) {
+                    leaderboardHtml = '<tr><td colspan="3" class="empty-state">No leaderboard entries yet.</td></tr>';
+                } else {
+                    topDonors.forEach((donor, index) => {
+                        leaderboardHtml += `<tr>
+                            <td><span class="leaderboard-rank">${index + 1}</span></td>
+                            <td><strong>${donor.donorName || 'Unknown'}</strong><br><small style="color:#6c6c6c;">${donor.donationCount || 0} donations · ${(donor.totalKg || 0).toFixed(1)} kg</small></td>
+                            <td><strong>${donor.mealsSaved || 0}</strong></td>
+                        </tr>`;
+                    });
+                }
+                document.getElementById('leaderboard-body').innerHTML = leaderboardHtml;
             } catch(e) {
                 console.error("Admin Dashboard Error:", e);
                 statusDiv.innerText = "⚠️ API Error: " + e.message;

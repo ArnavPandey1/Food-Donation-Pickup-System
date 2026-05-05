@@ -93,71 +93,19 @@
             document.getElementById('custom-modal').classList.add('hidden');
         }
 
-        let volunteerLat = null;
-        let volunteerLng = null;
-
-        function formatKm(km) {
-            if (km < 1) return `${Math.round(km*1000)} m`;
-            return `${km.toFixed(1)} km`;
-        }
-
-        function distanceBetween(lat1, lon1, lat2, lon2) {
-            // Haversine (km)
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
-
         async function loadFeed() {
             try {
                 const res = await fetch('http://localhost:8081/api/donations/active');
                 const data = await res.json();
                 let html = '';
-                // sort by computed distance if we have location
-                if (volunteerLat !== null) {
-                    data.sort((a,b) => {
-                        const da = distanceBetween(volunteerLat, volunteerLng, a.latitude, a.longitude);
-                        const db = distanceBetween(volunteerLat, volunteerLng, b.latitude, b.longitude);
-                        return da - db;
-                    });
-                }
                 data.forEach(d => {
-                    const distKm = (volunteerLat !== null) ? distanceBetween(volunteerLat, volunteerLng, d.latitude, d.longitude) : null;
-                    const distLabel = distKm === null ? '~?' : formatKm(distKm);
                     html += `<div class="list-item">
-                        <div><h3>${d.foodType}</h3><p>${d.donorName} • ${distLabel}</p></div>
+                        <div><h3>${d.foodType}</h3><p>${d.donorName} • ~2.1 km</p></div>
                         <button class="btn-primary" style="width: auto; padding: 0.6rem 1.2rem;" onclick="claim(${d.id}, '${d.foodType}', '${d.donorName}', ${d.latitude}, ${d.longitude})">Accept 🚀</button>
                     </div>`;
                 });
                 document.getElementById('active-list').innerHTML = html || '<p style="text-align: center; padding: 2rem;">No drops nearby yet. Keep an eye out!</p>';
-            } catch(e) { console.error('Failed to load feed', e); }
-        }
-
-        function startLocationWatch() {
-            if (!navigator.geolocation) return console.warn('Geolocation not available');
-            navigator.geolocation.getCurrentPosition((pos) => {
-                volunteerLat = pos.coords.latitude;
-                volunteerLng = pos.coords.longitude;
-                loadFeed();
-            }, (err) => console.warn('Location denied or unavailable', err), {enableHighAccuracy: true});
-
-            // update as the volunteer moves
-            navigator.geolocation.watchPosition((pos) => {
-                volunteerLat = pos.coords.latitude;
-                volunteerLng = pos.coords.longitude;
-                // update feed distances live
-                updateDistancesInView();
-            }, (err) => console.warn('Watch position error', err), {enableHighAccuracy: true, maximumAge: 5000, timeout: 5000});
-        }
-
-        function updateDistancesInView() {
-            // If active-list is rendered, refresh the feed html to update distance labels
-            if (document.getElementById('active-list')) loadFeed();
+            } catch(e) {}
         }
 
         async function claim(id, title, donor, lat, lng) {
@@ -236,7 +184,6 @@
             });
         }
 
-        startLocationWatch();
         loadFeed();
         loadHistory();
         connect();
